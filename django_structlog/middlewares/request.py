@@ -25,7 +25,7 @@ class RequestMiddleware:
     def __call__(self, request):
         from ipware import get_client_ip
 
-        request_id = str(uuid.uuid4())
+        request_id = request.META.get("HTTP_X_REQUEST_ID", str(uuid.uuid4()))
         with structlog.threadlocal.tmp_bind(logger):
             logger.bind(request_id=request_id)
 
