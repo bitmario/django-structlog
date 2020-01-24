@@ -2,6 +2,7 @@ import uuid
 
 import structlog
 from django.http import Http404
+from django.conf import settings
 
 from .. import signals
 
@@ -21,6 +22,7 @@ class RequestMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self._raised_exception = False
+        self._log_ip = getattr(settings, "DJANGO_STRUCTLOG_LOG_IP", True)
 
     def __call__(self, request):
         from ipware import get_client_ip
@@ -32,8 +34,10 @@ class RequestMiddleware:
             if hasattr(request, "user"):
                 logger.bind(user_id=request.user.pk)
 
-            ip, _ = get_client_ip(request)
-            logger.bind(ip=ip)
+            if self._log_ip:
+                ip, _ = get_client_ip(request)
+                logger.bind(ip=ip)
+
             signals.bind_extra_request_metadata.send(
                 sender=self.__class__, request=request, logger=logger
             )
